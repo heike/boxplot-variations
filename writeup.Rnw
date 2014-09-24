@@ -220,7 +220,7 @@ Bradley Terry model? same lineup, same data (except for order?), different peopl
 % initial discussion
 \paragraph{Exclusion criteria}
 <<data, echo=FALSE, results='hide'>>=
-setwd("~/papers/2013-boxplots/")
+#setwd("~/papers/2013-boxplots/")
 turk <- read.csv("data/raw_data_turk6.csv")
 suppressMessages(require(plyr))
 suppressMessages(require(ggplot2))
