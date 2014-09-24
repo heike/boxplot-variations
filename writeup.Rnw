@@ -1,0 +1,435 @@
+\documentclass[11pt]{article}
+\usepackage{natbib}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage{amstext}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Visual inference for evaluating graphics}
+\author{Eric Hare, Susan Vander Plas, Marie Vendettuoli, Heike Hofmann, \\ Department of Statistics\\ Iowa State University}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\end{abstract}
+<<setup, include=FALSE, cache=FALSE>>=
+#setwd("/Users/heike/papers/2013-boxplots/")
+suppressMessages(require("ggplot2"))
+suppressMessages(source("vase.r"))
+suppressMessages(source("ggviolin.R"))
+
+library(knitr)
+opts_chunk$set(fig.path='images-writeup/', cache.path='cache-writeup/', fig.align='center',  fig.width=5, fig.height=5, cache=TRUE)
+# initialize seeding
+foo <- runif(5)
+@
+\tableofcontents
+
+\section{Introduction}
+history of graphical evaluations
+
+lineups for testing
+
+inference on lineups: estimating visual $p$-values, variances 
+
+
+
+introduce boxplot variations
+figure \ref{fig:overview} shows an overview of a select number of boxplots variations.
+<<data-overview, echo=FALSE, results='hide', dependson='setup'>>=
+width=2
+height=3
+alpha=0.5
+
+simstudy <- function(type=1, pars=list()) {
+#  browser()
+  if (type == 1) {
+    n <- pars$n
+    group <- rep(1:pars$group, each=n)
+    vals <- rnorm(pars$group*n, mean=rep(pars$mu, each=n))
+    frame <- data.frame(group=group, vals=vals)
+  }
+  if (type == 2) {
+    n <- pars$n
+    group <- rep(1:pars$group, each=n)
+    vals <- rnorm(pars$group*n, 0)
+    vals[length(vals)+1-(1:pars$n1)] <- vals[length(vals)+1-(1:pars$n1)]+pars$mu
+    frame <- data.frame(group=group, vals=vals)
+  }
+  if (type == 3) {
+    n <- pars$n
+    group <- rep(1:pars$group, each=n)
+    vals <- c(rnorm(pars$n1, pars$mu),rnorm(n-pars$n1, 0))
+    vals <- scale(vals)
+    vals <- c(rnorm(n, 0), vals)
+    frame <- data.frame(group=group, vals=vals)
+  }
+  return(frame)
+}
+
+set.seed(16041972)
+type1 <- simstudy(type=1, pars=list(group=2, mu=c(0,1.2), n=96))
+type2 <- simstudy(type=2, pars=list(group=2, mu=2.5, n=96, n1=6))
+type3 <- simstudy(type=3, pars=list(group=2, mu=3.5, n=96, n1=36))
+
+@
+
+\begin{figure}
+\begin{minipage}[t]{.3\textwidth}
+(a) boxplots
+<<overview-figa, echo=FALSE, fig.width=2, fig.height=2, out.width='\\textwidth'>>=
+
+ggplot(data = type1, aes(x = factor(group), 
+      	y = vals, colour=factor(group), fill=factor(group))) + 
+				geom_boxplot(alpha=alpha) + xlab("") + ylab("") + theme(legend.position="none")
+@
+
+(d) vase plots, \\ bandwidth = 0.5
+<<overview-figd, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
+suppressMessages(ggvase(y="vals", group="group", data=type1, bandwidth=0.5))
+@
+(g) beeswarms \\
+
+%<<overview-figc, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
+%set.seed(3*16041972)
+%frame <- simstudy(type=1, pars=list(group=2, mu=c(0,1.0), n=96))
+%require(beeswarm)
+%# adjust graphics device size until it looks ok
+%bs <- beeswarm(formula = vals~group, data = frame, add = F, do.plot = T, method = "swarm", cex=2.5)
+%bs$group <- frame$group
+%
+%p4 <- ggplot(data=bs, aes(x = group, y = y.orig, group=group)) + 
+%        geom_boxplot(outlier.colour = 'NA', fill="grey80",  colour="grey60", width=0.75) +
+%        geom_point(aes(x = x, y = y, colour=factor(group)), shape=1, size=1) +
+%        scale_x_continuous(breaks=c(1,2)) + 
+%        theme(legend.position="none") + xlab("") + ylab("")
+%    			
+%ggsave(width=2, height=2, filename = "beeswarm-xpl.pdf", plot = p4)
+%@
+\includegraphics[width=\textwidth]{images/beeswarm-xpl}
+
+\end{minipage}
+\begin{minipage}[t]{.3\textwidth}
+
+(b) jittered dotplots
+<<overview-figb, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
+ggplot(data = type2, aes(x = factor(group), 
+        y = vals, colour=factor(group), fill=factor(group))) + 
+  	geom_boxplot(outlier.colour  = 'NA', fill="grey80", colour="grey60") + 
+		geom_jitter(aes(colour=factor(group)), position=position_jitter(width=0.15), shape=1) + 
+		xlab("") + ylab("") + theme(legend.position="none")
+@
+(e) vase plots, \\ bandwidth = 0.25
+<<overview-fige, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
+ggvase(y="vals", group="group", data=type2, bandwidth=0.25)
+# library(ggboxplots)
+# type2$group <- factor(type2$group)
+# qplot(group, vals, data=type2, geom="vase", fill=group)
+@
+
+(h) violin plots, \\ bandwidth = 0.25
+<<overview-figh, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
+suppressMessages(ggviolin(y="vals", group="group", data=type2, bandwidth=0.25))
+@
+
+\end{minipage}
+\begin{minipage}[t]{.3\textwidth}
+
+(c) hdr boxplots
+%<<overview-figf, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
+%source("gghdr.R")
+%frame <- simstudy(type=3, pars=list(n=96, mu=4, n1=48, group=2))
+%gghdr(y="vals", group="group", data=frame)
+%ggsave(file="images/hdr-xpl.pdf", width=2, height=2)
+%@
+
+\includegraphics[width=\textwidth]{images/hdr-xpl.pdf}
+
+(f) vase plots, \\ bandwidth = 0.15
+<<overview-figf, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
+ggvase(y="vals", group="group", data=type3, bandwidth=0.15)
+@
+
+(i) violin plots, \\ bandwidth = 0.5
+<<overview-figi, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
+
+ggviolin(y="vals", group="group", data=type3, bandwidth=0.5)
+@
+
+
+\end{minipage}
+
+\caption{Overview of boxplot variations following scenarios (i) to (iii) from left to right. \label{fig:overview}}
+\end{figure}
+
+All of our plots are generated with code based on the ggplot2 package \citep{wickham09} in the software R \citep{r}. The lineups are created using the nullabor package \citep{nullabor}.
+
+Figure \ref{fig:overview} gives an overview of all nine designs under the three different scenarios: the plots in the left column show mean shifts, in the middle there are outliers, and the data on the right contains bimodality in the second group. 
+The study was motivated from an ELISA plot analysis, where it is essential for analysts to be able to quickly decide, whether results from different plots share the same distribution or whether there is an indication of any problems as described under scenarios (i) to (iii). The ELISA design also gave rise to a fixed group size of $n = 96$. 
+
+
+%concept of visual complexity 
+
+
+
+
+intro lineups
+
+\section{Experimental Setup}
+In a simulation study, we investigate three different scenarios: (i) a {\bf mean shift} between two groups, (ii) two groups of normally distributed values, with a set of {\bf outliers} spiked into one group, and (iii) {\bf bimodality} in one of the groups.
+The objective in each of these scenarios is to assess whether we can visually determine the difference between the two groups.
+
+Each of the scenarios requires the simulation of two groups of size $n=96$. In all of them, we get group 1 by drawing a sample from $N(0,1)$.
+
+Getting values for group 2 depends on each scenario:
+\begin{enumerate}
+\item[(i)] 96 draws from $N(\mu,1)$
+\item[(ii)] 90 draws from $N(0,1)$, and  6 draws from  $N(\mu,1)$
+\item[(iii)] $96 - n_1$ draws from $N(0,1)$,  $n_1$ draws from $N(\mu, 1)$, which got combined and normalized to 0,1, to remove all mean and variance differences between the two groups. 
+\end{enumerate}
+
+the simulation setup consists of three different scenarios, which have in common that we are simulating data for two equal-sized groups. The first group comes from a Normal $N(0.82, 0.03^2)$ distribution (motivated, again, by the ELISA design). For the mean-shift scenario, the second group is simulated from a Normal $N(0.82 + \delta_1, 0.03^2)$ distribution, with $\delta_1 \in 0.03 \cdot (0.5, 0.6, 0.7 , ..., 1.3)$. This difference in means corresponds to a $p$-value of a $t$-test from $8 \cdot 10^{-4}$ to $2 \cdot 10^{-14}$, which is reflected in the difficulty level of spotting the correct plot from the lineup (cf. figure \ref{fig:power-result} (left)).
+
+For the second scenario, we spiked into the second group six outliers from a Normal $N(0.82 + \delta_2, 0.03^2)$ distribution with $\delta_2 \in  0.03 \cdot (3.25, 3.5, 3.75, ..., 5.25)$, assuming that as the difficulty for identifying the data plot from the lineup would decrease with an increase in $\delta_2$. This did not hold up in practice, as can be seen in 
+
+In the third scenario, the second group consists of a mixtures of two normal distributions with a shift in mean of $\delta_3$ between them. The difficulty levels depends both on the absolute size of $\delta_3$ and the relative size of the two groups: we are investigating three different scenarios, here: $n_1 = 24, 36,$ and $48$, giving relative ratios of $1:3, 3:5,$ and $1:1$ between the groups. With an increase in $\delta_3$ and a ratio closer to $1:1$, the difficulty level  of identifying the correct plot from the lineup is assumed to decrease.  In order to avoid any other influences besides the bi-modality in the second group, we scale this group to have a mean of 0.82 and variance of $0.03^2$.
+
+
+
+\paragraph{How did we reach participants?}
+In the study (see \url{http://www.public.iastate.edu/~mahbub/feedback_turk6/homepage.html}),
+participants were shown ten lineups: one reference chart randomly placed in the set of ten, and nine other  lineups: one from each of the designs, three from each of the three scenarios at three difficulty levels.
+
+
+
+
+
+model structure
+
+hierarchical linear model
+
+Bradley Terry model? same lineup, same data (except for order?), different people to evaluate - remove people effect?
+
+\section{Results}
+% initial discussion
+\paragraph{Exclusion criteria}
+<<data, echo=FALSE, results='hide'>>=
+setwd("~/papers/2013-boxplots/")
+turk <- read.csv("data/raw_data_turk6.csv")
+suppressMessages(require(plyr))
+suppressMessages(require(ggplot2))
+
+refid <- grep("ref", as.character(turk$test_param))
+refturk <- turk[refid,]
+subturk <- turk[-grep("ref", as.character(turk$test_param)), ]
+
+refturker <- ddply(refturk, .(id), summarize,
+  n = length(id),
+  correct=sum(response)
+)
+missedref <- subset(refturker, correct/n <.5)
+
+
+turker <- ddply(subset(subturk, id %in% unique(missedref)$id), .(id),
+#turker <- ddply(turk, .(id),
+  summarize,
+    correct=mean(response)
+)
+
+exclude <- NULL
+cperc <- 0.2
+exclude <- unique(subset(turker, correct < cperc)$id)
+subturk <- subset(subturk, !(id %in% exclude))
+
+subturk <- subset(subturk, !(is.na(academic_study)))
+@
+
+<<data-prep, echo=FALSE, results='hide', dependson='data'>>=
+
+vals <- strsplit(gsub("n","-",as.character(subturk$param_value)),"_")
+vals <- ldply(vals, function(x) as.numeric(x))
+subturk$mu <- vals[,1]
+subturk$n1 <- vals[,2]
+subturk$type <- vals[,3]
+subturk$scenario <- c("mean-shift", "outliers", "bi-modality")[subturk$type]
+
+
+subturk$test_param <- factor(gsub("turk6_","",as.character(subturk$test_param)))
+
+lineups <- ddply(subturk, .(pic_name), summarize,
+  n = length(id), # number of evaluations
+  q = sum(response),
+  correct=100*mean(response),
+  time=mean(log10(time_taken)),
+  test_param = test_param[1],
+  param_value = param_value[1],
+  type=type[1],
+  scenario=scenario[1],               
+  mu=mu[1],
+  difficulty=difficulty[1],
+  conf=mean(6-conf_level)               
+)
+
+turker <- ddply(subturk, .(id), summarize,
+  n = length(id), # number of evaluations
+  correct=100*mean(response),
+  time=mean(time_taken),
+  age = max(c(0,age), na.rm=T),
+  gender=max(c(0,gender), na.rm=T),
+  education=max(c(0,academic_study), na.rm=T)
+)
+
+subturk$type <- factor(subturk$type)
+@
+% matrix(loc_false$n/sum(loc_false$n)*100, ncol=5, byrow=TRUE)
+
+
+\Sexpr{length(unique(turk$id))} participants were taking part in the study for a total of \Sexpr{nrow(turk)} records. 
+% Describing the data cleaning process
+The purpose of the reference lineup, is to be able to filter out participants trying to `game' the system: reference lineups are constructed in such a way, that the data plot should be completely obvious to the observer without any kind of training. Unfortunately, we see in practice, that some participants miss the reference chart, but correctly identify all other charts. The inclusion criterion for the study is therefore a combination of two approaches: we 
+require participants either to correctly identify the data plot in the reference lineup -- or -- have at least \Sexpr{cperc*100}\% correct responses, ( 20\% is enough evidence to show results beyond mere guessing, but we can change the setting in the Rnw file to try out how results are affected by making restrictions harder or easier.)
+
+Records from participants failing to meet these requirements are excluded from the analysis. 
+We also excluded all records where participants did not reveal demographic information. While this in itself is not an exlcusion criterion in a regular study, we noticed a significant difference in performance ($p$-value of a two sample $t$-test is 0.001127) 
+% with(subturk, t.test(correct[is.na(age)], correct[!is.na(age)]))
+% chisq.test(xtabs(~is.na(age)+correct, data=subturk), simulate.p.value=TRUE, correct=FALSE)
+
+Additionally, we do not regard any records from reference lineups.
+
+
+This leads to the exclusion of \Sexpr{length(unique(turk$id)) - length(unique(subturk$id))} participants and a total of \Sexpr{nrow(turk) - nrow(subturk)} records.
+
+% model results
+For the evaluation, we make use of a logistic regression model for the probability of picking out the data plot from each of the lineups with  additional data- and subject-specific random effects:
+\begin{equation}\label{model0}
+\text{logit } \pi_{ijk\ell} = \delta_{k\ell} + u_i + v_j,
+\end{equation}
+where 
+
+\begin{tabular}{lp{5in}}
+$\pi_{ijk\ell}$ & is the ability of individual $i$ to pick out the  data plot under scenario $\ell$ ($\ell \in \{1,2,3\}$) from parameter setting $j$ (nine in each scenario) and design $k$ ($1 \le k \le 9$). \\
+$\delta_{k\ell}$ & is the treatment-specific effect, i.e. the effect that  design $k$ has under scenario $\ell$ on picking out the data plot. \\
+$u_i$ & is a subject-specific random effect with $u \sim MVN(0, \sigma_u^2 \cdot I)$. $u_i$ reflects individual $i$'s ability to pick out visual signals from a graphical display. \\
+$v_j$ & is a data-specific random effect with $v \sim MVN(0, \sigma_v^2 \cdot I)$. $v_j$ is the difficulty level for a specific parameter setting; $u, v$ are independent.
+\end{tabular}
+
+<<model, echo=FALSE, results='hide', dependson='data-prep'>>=
+suppressMessages(library(lme4))
+subturk$type <- gsub(".*_([123])$", "\\1", as.character(subturk$param_value))
+subturk$td <- with(subturk, interaction(test_param, type))
+model0 <- lmer(response~td  + (1|id)+(1|param_value), data=subturk, family=binomial())
+
+skills <- data.frame(id=row.names(ranef(model0)$id), skill=ranef(model0)[[1]][,1])
+subturk <- merge(subturk, skills, by="id")
+ells <- data.frame(param_value=row.names(ranef(model0)[[2]]), li=ranef(model0)[[2]][,1])
+lineups <- merge(lineups, ells, by="param_value")
+@
+
+<<model2, echo=FALSE, results='hide'>>=
+# another attempt: split the experiments and fit them separately
+suppressMessages(require(plyr))
+suppressMessages(require(effects))
+
+
+calc_letters <- function(model) {
+  suppressMessages(require(multcomp))
+  type_compare <- glht(model, mcp(td="Tukey"))
+  letters <- cld(type_compare)$mcletters$Letters
+  letters_df <- data.frame(td = names(letters), letter = unname(letters))
+  lsplit <- ldply(strsplit(split="\\.", names(letters)), function(x) x)
+  letters <- cld(type_compare)$mcletters$Letters
+  letters_df <- data.frame(td = names(letters), letter = unname(letters))
+  letters_df$type <- lsplit[,2]
+  letters_df$test_param <- lsplit[,1]
+  letters_df
+}
+
+calc_type <- function(model) {
+  type <- data.frame(effect("td", model))
+  tsplit <- ldply(strsplit(as.character(type$td), split="\\."), function(x) x)
+  type$type <- tsplit[,2]
+  type$test_param <- tsplit[,1]
+  type
+}
+model0a <- lmer(response~td  + (1|id)+(1|param_value), data=subset(subturk, type==1), family=binomial())
+model0b <- lmer(response~td  + (1|id)+(1|param_value), data=subset(subturk, type==2), family=binomial())
+model0c <- lmer(response~td  + (1|id)+(1|param_value), data=subset(subturk, type==3), family=binomial())
+
+
+l1 <- calc_letters(model0a)
+l2 <- calc_letters(model0b)
+l3 <- calc_letters(model0c)
+
+letters_df <- rbind(l1,l2,l3)
+letters_df$scenario <- factor(c("mean-shift", "outliers", "bi-modality")[as.numeric(as.character(letters_df$type))])
+
+t1 <- calc_type(model0a)
+t2 <- calc_type(model0b)
+t3 <- calc_type(model0c)
+
+type <- rbind(t1,t2,t3)
+type$scenario <- factor(c("mean-shift", "outliers", "bi-modality")[as.numeric(as.character(type$type))])
+@
+
+% <<model2, echo=FALSE, results='hide', dependson='model'>>=
+% suppressMessages(require(effects))
+% type <- data.frame(effect("td", model0))
+% tsplit <- ldply(strsplit(as.character(type$td), split="\\."), function(x) x)
+% type$type <- tsplit[,2]
+% type$test_param <- tsplit[,1]
+% @
+
+For the \Sexpr{nrow(turker)} participants in the study, the subject specific random effects $\widehat{u}_i \in ($\Sexpr{round(min(skills$skill),2)}, \Sexpr{round(max(skills$skill),2)}$)$, with $\widehat{\sigma}_u = $ \Sexpr{round(sd(skills$skill),2)}.
+Data specific-effects  $\widehat{v}_j \in ($\Sexpr{round(min(lineups$li),2)}, \Sexpr{round(max(lineups$li),2)}$)$, with $\widehat{\sigma}_v = $ \Sexpr{round(sd(lineups$li),2)}. Both subject-specific effects and data-specific random effects appear to be symmetric and close to normal. We are only going to make interpretive use of the subject-specific random effects, whereas we are using the data-specific effects for mere correction purposes in the modeling process.
+
+
+\begin{figure}
+\begin{center}
+\begin{minipage}[t]{0.4\textwidth}
+<<random-u, echo=FALSE, fig.width=3.5, fig.height=2.5, out.width='\\textwidth', dependson='model2'>>=
+
+qplot(skill, geom="histogram", binwidth=0.15, data=skills) + xlab("Subject-specific Random Effects") 
+@
+\end{minipage}
+\begin{minipage}[t]{0.45\textwidth}
+<<random-l, echo=FALSE, fig.width=4, fig.height=2.5,  out.width='\\textwidth', dependson='model2'>>=
+qplot(scenario, li, geom=c("boxplot"), binwidth=0.25, data=lineups) + geom_point(aes(colour=scenario), size=I(3)) + ylab("Random Effects due to parameter setting") +xlab("Scenario") + coord_flip() + theme(legend.position="none")
+@
+\end{minipage}
+\end{center}
+\caption{Histograms of  random effects. Subject-specific  effects $u$ (left) and data-specific effects $v$ (right). \label{fig:random}}
+\end{figure}
+
+
+
+
+
+% tie in of results to visual complexity
+
+Visual complexity \citep{kosslyn} is a concept from cognitive psychology -- from a statistical persepctive this is similar to the idea of (minimal) sufficient statistics:
+for data charts, we can think of the minimal sufficient statistics as all of the data (summaries) that are necessary to render the display. 
+
+Tukey's boxplot definition \citep{tukey77} requires at least five summary statistics from the data: median, first and third quartile, and the two data values inside the whiskers, i.e. the maximal points within 3rd quartile + 1.5 IQR and 1st quartile - 1.5 IQR (where IQR is the inter-quartile distance of 3rd and 1st quartiles). Additionally, we need the values of all outliers and extreme outliers. The number of sufficient statistics therefore depends on the distribution and the amount of underlying data: skew distributions need a higher number of sufficient statistics than values from a symmetric distribution, the number of outliers is roughly linear in the number of records - for a normal distribution, the amount of outliers is approximately 5\%.
+While boxplots have been shown to be highly efficient at comparing medians and variability between different groups, they are known to fail in situations involving multi-modality.
+The idea for this study is to investigate  alternatives/extensions of the standard boxplot to  
+overcome this weakness while keeping the strengths of boxplots. A multitude of different boxplot extensions has been suggested in the literature - for a detailed overview of the history of boxplots and their variations see \citet{hadley}.
+
+The alternative designs are - listed from least visual complexity to most:
+
+\begin{enumerate}
+\item highest density region (hdr) boxplots \citep{hyndman96}  with boxes at probabilities 0.9, 0.5 and 0.25
+\item vase plots \citep{benjamini88} with three different bandwidths
+\item violin boxplots \citep{hintze98} with two bandwidths
+\item beeswarm \citep{eklund11}
+\item jittered dotplots
+\end{enumerate}
+\section{Conclusions}
+\bibliographystyle{asa}
+\bibliography{references}
+\end{document}
