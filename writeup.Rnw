@@ -11,6 +11,9 @@
 \usepackage{epstopdf}
 \DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
 
+\usepackage[dvipsnames,svgnames]{xcolor}
+\newcommand{\hh}[1]{{\color{orange} #1}}
+
 \title{Visual inference for evaluating graphics}
 \author{Eric Hare, Susan Vander Plas, Marie Vendettuoli, Heike Hofmann, \\ Department of Statistics\\ Iowa State University}
 \begin{document}
@@ -32,6 +35,7 @@ foo <- runif(5)
 \tableofcontents
 
 \section{Introduction}
+\hh{
 history of graphical evaluations
 
 lineups for testing
@@ -41,6 +45,7 @@ inference on lineups: estimating visual $p$-values, variances
 
 
 introduce boxplot variations
+}
 figure \ref{fig:overview} shows an overview of a select number of boxplots variations.
 <<data-overview, echo=FALSE, results='hide', dependson='setup'>>=
 width=2
@@ -179,7 +184,7 @@ The study was motivated from an ELISA plot analysis, where it is essential for a
 
 
 
-intro lineups
+\hh{intro lineups}
 
 \section{Experimental Setup}
 In a simulation study, we investigate three different scenarios: (i) a {\bf mean shift} between two groups, (ii) two groups of normally distributed values, with a set of {\bf outliers} spiked into one group, and (iii) {\bf bimodality} in one of the groups.
@@ -209,13 +214,13 @@ participants were shown ten lineups: one reference chart randomly placed in the 
 
 
 
-
+\hh{
 model structure
 
 hierarchical linear model
 
 Bradley Terry model? same lineup, same data (except for order?), different people to evaluate - remove people effect?
-
+}
 \section{Results}
 % initial discussion
 \paragraph{Exclusion criteria}
@@ -323,7 +328,7 @@ $v_j$ & is a data-specific random effect with $v \sim MVN(0, \sigma_v^2 \cdot I)
 suppressMessages(library(lme4))
 subturk$type <- gsub(".*_([123])$", "\\1", as.character(subturk$param_value))
 subturk$td <- with(subturk, interaction(test_param, type))
-model0 <- lmer(response~td  + (1|id)+(1|param_value), data=subturk, family=binomial())
+model0 <- glmer(response~td  + (1|id)+(1|param_value), data=subturk, control=glmerControl(optimizer="bobyqa"), family=binomial())
 
 skills <- data.frame(id=row.names(ranef(model0)$id), skill=ranef(model0)[[1]][,1])
 subturk <- merge(subturk, skills, by="id")
@@ -357,9 +362,9 @@ calc_type <- function(model) {
   type$test_param <- tsplit[,1]
   type
 }
-model0a <- lmer(response~td  + (1|id)+(1|param_value), data=subset(subturk, type==1), family=binomial())
-model0b <- lmer(response~td  + (1|id)+(1|param_value), data=subset(subturk, type==2), family=binomial())
-model0c <- lmer(response~td  + (1|id)+(1|param_value), data=subset(subturk, type==3), family=binomial())
+model0a <- glmer(response~td  + (1|id)+(1|param_value), control=glmerControl(optimizer="bobyqa"),  data=subset(subturk, type==1), family=binomial())
+model0b <- glmer(response~td  + (1|id)+(1|param_value), control=glmerControl(optimizer="bobyqa"), data=subset(subturk, type==2), family=binomial())
+model0c <- glmer(response~td  + (1|id)+(1|param_value), control=glmerControl(optimizer="bobyqa"), data=subset(subturk, type==3), family=binomial())
 
 
 l1 <- calc_letters(model0a)
