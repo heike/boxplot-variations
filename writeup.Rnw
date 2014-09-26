@@ -1,20 +1,29 @@
-\documentclass[11pt]{article}
-\usepackage{natbib}
-\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
-\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
-\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
-\usepackage{graphicx}
-\usepackage{subfig}
-\usepackage{amssymb}
-\usepackage{url}
+\documentclass{article} % JASA requires 12 pt font for manuscripts
+%\usepackage{JASA_manu}        % For JASA manuscript formatting
+\usepackage{times, asa}
+
+%\usepackage{endfloat} % just for while I am writing
+
+% for citations
+\usepackage[authoryear]{natbib} % natbib required for JASA
+\usepackage[colorlinks=true, citecolor=blue, linkcolor=blue]{hyperref}
+
+% page formatting
+\usepackage[margin = 1in]{geometry}
+
+% For math typsetting
+\usepackage{bm}
 \usepackage{amstext}
-\usepackage{epstopdf}
-\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{multirow}
+
 
 \usepackage[dvipsnames,svgnames]{xcolor}
 \newcommand{\hh}[1]{{\color{orange} #1}}
 
-\title{Visual inference for evaluating graphics}
+\title{Boxplot variations -- why old is best for boxplots}
 \author{Eric Hare, Susan Vander Plas, Marie Vendettuoli, Heike Hofmann, \\ Department of Statistics\\ Iowa State University}
 \begin{document}
 \maketitle
@@ -35,6 +44,7 @@ foo <- runif(5)
 \tableofcontents
 
 \section{Introduction}
+
 \hh{
 history of graphical evaluations
 
@@ -46,6 +56,7 @@ inference on lineups: estimating visual $p$-values, variances
 
 introduce boxplot variations
 }
+
 figure \ref{fig:overview} shows an overview of a select number of boxplots variations.
 <<data-overview, echo=FALSE, results='hide', dependson='setup'>>=
 width=2
@@ -91,7 +102,7 @@ type3 <- simstudy(type=3, pars=list(group=2, mu=3.5, n=96, n1=36))
 <<overview-figa, echo=FALSE, fig.width=2, fig.height=2, out.width='\\textwidth'>>=
 
 ggplot(data = type1, aes(x = factor(group), 
-      	y = vals, colour=factor(group), fill=factor(group))) + 
+        y = vals, colour=factor(group), fill=factor(group))) + 
 				geom_boxplot(alpha=alpha) + xlab("") + ylab("") + theme(legend.position="none")
 @
 
@@ -175,6 +186,11 @@ ggviolin(y="vals", group="group", data=type3, bandwidth=0.5)
 
 All of our plots are generated with code based on the ggplot2 package \citep{wickham09} in the software R \citep{r}. The lineups are created using the nullabor package \citep{nullabor}.
 
+
+
+
+
+
 Figure \ref{fig:overview} gives an overview of all nine designs under the three different scenarios: the plots in the left column show mean shifts, in the middle there are outliers, and the data on the right contains bimodality in the second group. 
 The study was motivated from an ELISA plot analysis, where it is essential for analysts to be able to quickly decide, whether results from different plots share the same distribution or whether there is an indication of any problems as described under scenarios (i) to (iii). The ELISA design also gave rise to a fixed group size of $n = 96$. 
 
@@ -210,8 +226,6 @@ In the third scenario, the second group consists of a mixtures of two normal dis
 \paragraph{How did we reach participants?}
 In the study (see \url{http://www.public.iastate.edu/~mahbub/feedback_turk6/homepage.html}),
 participants were shown ten lineups: one reference chart randomly placed in the set of ten, and nine other  lineups: one from each of the designs, three from each of the three scenarios at three difficulty levels.
-
-
 
 
 \hh{
@@ -254,6 +268,7 @@ subturk <- subset(subturk, !(id %in% exclude))
 
 subturk <- subset(subturk, !(is.na(academic_study)))
 @
+
 
 <<data-prep, echo=FALSE, results='hide', dependson='data'>>=
 
@@ -307,7 +322,6 @@ We also excluded all records where participants did not reveal demographic infor
 
 Additionally, we do not regard any records from reference lineups.
 
-
 This leads to the exclusion of \Sexpr{length(unique(turk$id)) - length(unique(subturk$id))} participants and a total of \Sexpr{nrow(turk) - nrow(subturk)} records.
 
 % model results
@@ -323,6 +337,8 @@ $\delta_{k\ell}$ & is the treatment-specific effect, i.e. the effect that  desig
 $u_i$ & is a subject-specific random effect with $u \sim MVN(0, \sigma_u^2 \cdot I)$. $u_i$ reflects individual $i$'s ability to pick out visual signals from a graphical display. \\
 $v_j$ & is a data-specific random effect with $v \sim MVN(0, \sigma_v^2 \cdot I)$. $v_j$ is the difficulty level for a specific parameter setting; $u, v$ are independent.
 \end{tabular}
+
+
 
 <<model, echo=FALSE, results='hide', dependson='data-prep'>>=
 suppressMessages(library(lme4))
@@ -382,6 +398,9 @@ type <- rbind(t1,t2,t3)
 type$scenario <- factor(c("mean-shift", "outliers", "bi-modality")[as.numeric(as.character(type$type))])
 @
 
+
+
+
 % <<model2, echo=FALSE, results='hide', dependson='model'>>=
 % suppressMessages(require(effects))
 % type <- data.frame(effect("td", model0))
@@ -411,9 +430,10 @@ qplot(scenario, li, geom=c("boxplot"), binwidth=0.25, data=lineups) + geom_point
 \caption{Histograms of  random effects. Subject-specific  effects $u$ (left) and data-specific effects $v$ (right). \label{fig:random}}
 \end{figure}
 
+
 \begin{figure}
 \centering
-<<letters, echo=FALSE, figure.width=8, figure.height=6, out.width='\\textwidth'>>=
+<<letters, echo=FALSE, fig.width=8, fig.height=5, out.width='\\textwidth'>>=
 letters_df$a <- ""
 letters_df$b <- ""
 letters_df$c <- ""
@@ -460,6 +480,11 @@ The alternative designs are - listed from least visual complexity to most:
 \item jittered dotplots
 \end{enumerate}
 \section{Conclusions}
+
+
+
+
+
 \bibliographystyle{asa}
 \bibliography{references}
 \end{document}
