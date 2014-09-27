@@ -110,7 +110,7 @@ ggplot(data = type1, aes(x = factor(group),
 <<overview-figd, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
 suppressMessages(ggvase(y="vals", group="group", data=type1, bandwidth=0.5))
 @
-(g) beeswarms \\
+(g) beeswarms \citep{eklund11} \\
 
 %<<overview-figc, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
 %set.seed(3*16041972)
@@ -149,7 +149,7 @@ ggvase(y="vals", group="group", data=type2, bandwidth=0.25)
 # qplot(group, vals, data=type2, geom="vase", fill=group)
 @
 
-(h) violin plots, \\ bandwidth = 0.25
+(h) violin plots \citep{hintze98},  bandwidth = 0.25
 <<overview-figh, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
 suppressMessages(ggviolin(y="vals", group="group", data=type2, bandwidth=0.25))
 @
@@ -157,7 +157,7 @@ suppressMessages(ggviolin(y="vals", group="group", data=type2, bandwidth=0.25))
 \end{minipage}
 \begin{minipage}[t]{.3\textwidth}
 
-(c) hdr boxplots
+(c) hdr boxplots  \citep{hyndman96}
 %<<overview-figf, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
 %source("gghdr.R")
 %frame <- simstudy(type=3, pars=list(n=96, mu=4, n1=48, group=2))
@@ -167,7 +167,7 @@ suppressMessages(ggviolin(y="vals", group="group", data=type2, bandwidth=0.25))
 
 \includegraphics[width=\textwidth]{images/hdr-xpl.pdf}
 
-(f) vase plots, \\ bandwidth = 0.15
+(f) vase plots \citep{benjamini88}, \\ bandwidth = 0.15
 <<overview-figf, echo=FALSE, fig.width=2, fig.height=2,  out.width='\\textwidth'>>=
 ggvase(y="vals", group="group", data=type3, bandwidth=0.15)
 @
@@ -431,6 +431,15 @@ qplot(scenario, li, geom=c("boxplot"), binwidth=0.25, data=lineups) + geom_point
 \end{figure}
 
 
+
+Figure \ref{fig:letterplot} summarizes the results by scenario: the estimated probablities of picking the data plot from a lineup are shown ($x$-axis) by design ($y$-axis), facetted by scenario. The boxplots show the extent of subject-specific random effects, i.e. subject-specific ability. 
+Labelling in letter displays \cite{piepho:04} is used to show significances.
+
+Overall, scenarios (i) and (iii) have higher success probabilities, indicating, that outlier-identification is perceptually a harder task, or harder to identify as a task.
+Boxplots (red) show a surprisingly (?) good overall performance: for scenario (i), the mean shift, they are beaten (non-significantly) by the vase boxplots, while for scenario (ii) all but jittered dotplots, hdr plots and the swarm plot perform significantly worse. 
+However, in scenario (iii), boxplots are beaten - on average - by all other designs, significantly so by all except for the beeswarm and one of the vase plot designs. The jittered dotplots are -- by far -- best suited for scenario (iii).
+Regarding all scenarios together, the vase plots perform better than the boxplots -- but only the vaseplot with  the widest kernel bandwidth is showing a significantly better performance. 
+
 \begin{figure}
 \centering
 <<letters, echo=FALSE, fig.width=8, fig.height=5, out.width='\\textwidth'>>=
@@ -441,7 +450,7 @@ letters_df$a[grep("a", letters_df$letter)] <- "a"
 letters_df$b[grep("b", letters_df$letter)] <- "b"
 letters_df$c[grep("c", letters_df$letter)] <- "c"
 lineups$td <- factor(with(lineups, paste(test_param, type, sep=".")))
-type <- ddply(type, .(scenario), transform, order=factor(order(fit)))
+type <- ddply(type, .(scenario), transform, order=factor(rank(fit)))
 lineups <- merge(lineups, type[, c("order", "scenario", "td")], by=c("td", "scenario"))
 letters_df <- merge(letters_df, type[, c("order", "scenario", "td")], by=c("td", "scenario"))
 
@@ -479,10 +488,11 @@ overcome this weakness while keeping the strengths of boxplots. A multitude of d
 The alternative designs are - listed from least visual complexity to most:
 
 \begin{enumerate}
-\item highest density region (hdr) boxplots \citep{hyndman96}  with boxes at probabilities 0.9, 0.5 and 0.25
-\item vase plots \citep{benjamini88} with three different bandwidths
-\item violin boxplots \citep{hintze98} with two bandwidths
-\item beeswarm \citep{eklund11}
+\item boxplots
+\item highest density region (hdr) boxplots  with boxes at probabilities 0.9, 0.5 and 0.25
+\item vase plots  with three different bandwidths
+\item violin boxplots  with two bandwidths
+\item beeswarm 
 \item jittered dotplots
 \end{enumerate}
 \section{Conclusions}
