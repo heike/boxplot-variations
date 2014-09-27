@@ -57,7 +57,7 @@ inference on lineups: estimating visual $p$-values, variances
 introduce boxplot variations
 }
 
-figure \ref{fig:overview} shows an overview of a select number of boxplots variations.
+
 <<data-overview, echo=FALSE, results='hide', dependson='setup'>>=
 width=2
 height=3
@@ -440,24 +440,30 @@ letters_df$c <- ""
 letters_df$a[grep("a", letters_df$letter)] <- "a"
 letters_df$b[grep("b", letters_df$letter)] <- "b"
 letters_df$c[grep("c", letters_df$letter)] <- "c"
-lineups$td <- with(lineups, paste(test_param, type, sep="."))
+lineups$td <- factor(with(lineups, paste(test_param, type, sep=".")))
+type <- ddply(type, .(scenario), transform, order=factor(order(fit)))
+lineups <- merge(lineups, type[, c("order", "scenario", "td")], by=c("td", "scenario"))
+letters_df <- merge(letters_df, type[, c("order", "scenario", "td")], by=c("td", "scenario"))
+
 
 means <- ddply(lineups, .(scenario), summarize, means=mean(correct))
-ggplot() + geom_vline(aes(xintercept=means), data=means, colour="grey50") +
-  geom_point(aes(y=reorder(td, fit, mean),x=fit*100, colour=test_param),  size=4, data=type) + 
-  geom_point(aes(y=td,x=correct, colour=test_param),  size=2, alpha=0.5, data=lineups) + 
+ggplot() + geom_hline(aes(yintercept=means), data=means, colour="grey50") +
+  geom_boxplot(aes(x=order,y=correct, fill=test_param), alpha=0.5, data=lineups) +
+  geom_point(aes(x=order,y=fit*100),  size=4, data=type) +
+  facet_grid(scenario~., scales="free", space="free", drop=TRUE, shrink=TRUE) +
+  coord_flip() + 
+#  geom_point(aes(y=td,x=correct, colour=test_param),  size=2, alpha=0.5, data=lineups) + 
 #  geom_line(aes(x=test_param,y=correct, group=param_value), data=lineups, alpha=0.5) + coord_flip() +
-  facet_grid(scenario~., scales="free_y") +
-  theme_bw() + xlim(c(-17.5, 100)) + 
-  scale_colour_brewer(palette="Set1", guide="none") +
-  geom_text(aes(y=td, label=a), x=-8, data=letters_df, size=3) + 
-  geom_text(aes(y=td, label=b), x=-6.5, data=letters_df, size=3) + 
-  geom_text(aes(y=td, label=c), x=-5, data=letters_df, size=3) +
-  geom_text(aes(y=td, label=test_param), x=-12.5, hjust=1, data=letters_df, size=3.5) + 
-  ylab("") + xlab("Percent data picks") + 
+  theme_bw() + ylim(c(-17.5, 100)) + 
+  scale_fill_brewer(palette="Set1", guide="none") +
+  geom_text(aes(x=order, label=a), y=-8, data=letters_df, size=3) + 
+  geom_text(aes(x=order, label=b), y=-6.5, data=letters_df, size=3) + 
+  geom_text(aes(x=order, label=c), y=-5, data=letters_df, size=3) +
+  geom_text(aes(x=order, label=test_param), y=-12.5, hjust=1, data=letters_df, size=3.5) + 
+  xlab("") + ylab("Percent data picks") + 
   theme(axis.ticks.y=element_blank(), axis.text.y=element_blank())
 @
-\caption{\label{letterplot} Facetted dotplot of percent of data picks by type of charts; the three different panels show different scenarios. Designs are sorted according to model fit (large point). The labelling in each panel shows significant differences between designs: designs that do not have a letter in common, are significantly different on the 0.05 significance level. }
+\caption{\label{fig:letterplot} Facetted boxplots of percent of data picks by type of charts; the three different panels show different scenarios. Designs are sorted according to model fit (large point). The labelling in each panel shows significant differences between designs: designs that do not have a letter in common, are significantly different on the 0.05 significance level. }
 \end{figure}
 
 % tie in of results to visual complexity
