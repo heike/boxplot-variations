@@ -513,8 +513,45 @@ The alternative designs are - listed from least visual complexity to most:
 \item jittered dotplots
 \end{enumerate}
 
+
 \hh{still missing: how does scenario recognition help with solution? 
-How well do charts detect anomalies? ... compared to other tests?}
+How well do charts detect anomalies? ... compared to other tests?
+Does difficulty line up with p-values/speed?
+
+speed of evaluation?}
+
+Not a lot of difference between tasks and designs in time taken for each lineup.
+<<speed>>=
+mean.speed <- ddply(subturk, .(scenario), summarise, means=mean(time_taken))
+qplot(facets=~scenario, test_param, time_taken, data=subturk, geom="boxplot") + scale_y_log10() + 
+  geom_hline(aes(yintercept=means), data=mean.speed)
+@
+
+Reasons for the choice of plot are 
+1) Big vertical difference,  2 ) Separate Groups, 3) Multiple Modes, 4) Outliers, and 5) Other.
+These reasons line up with the scenarios: mean shift with (1), bimodality with (2,3) and outliers with (4). Our thinking to assign two reasons to the scenario of bimodality was driven by our fear that 'multiple modes' might be a too statistical term for a general audience.
+Figure~\ref{fig:reason} shows an overview of the reasons given compared to the conditional probability of choosing the data plot. For all three scenarios giving the  reason associated to it raises the probability of identifying the data. In the mean-shift scenario picking the first reason (big vertical difference) doubles the probability of identifying the data. Similarly, in the outlier scenario choosing outliers as the reason more than doubles the chance. In the bi-modality scenario picking reason number 2) - separate groups - increases the chance of identifying the data. Picking reason number 3) - multiple modes - did not increase the chance of correct data identification. It was also the reason picked the fewest number of times from all of the participants (it turned out that it was a good thing that we decided to go for two reasons).
+<<reasons>>=
+subturk$choice_reason <- as.character(subturk$choice_reason)
+subturk$r1 <- FALSE
+subturk$r1[grep("1", subturk$choice_reason)] <- TRUE
+subturk$r2 <- FALSE
+subturk$r2[grep("2", subturk$choice_reason)] <- TRUE
+subturk$r3 <- FALSE
+subturk$r3[grep("3", subturk$choice_reason)] <- TRUE
+subturk$r4 <- FALSE
+subturk$r4[grep("4", subturk$choice_reason)] <- TRUE
+subturk$r5 <- FALSE
+subturk$r5[grep("5", subturk$choice_reason)] <- TRUE
+
+library(reshape2)
+stm <- melt(subturk, id.var=c("scenario", "td", "response"), measure.var=c("r1", "r2", "r3", "r4", "r5"))
+
+stm$response <- factor(stm$response, levels=c("TRUE", "FALSE"))
+qplot(variable, weight=value, geom="bar", data=stm, fill=response, facets=~scenario)
+qplot(variable, weight=value, geom="bar", position="fill", data=stm, fill=response, facets=~scenario)
+@
+      
 
 \section{Conclusions}
 
