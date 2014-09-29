@@ -551,7 +551,26 @@ stm$response <- factor(stm$response, levels=c("TRUE", "FALSE"))
 qplot(variable, weight=value, geom="bar", data=stm, fill=response, facets=~scenario)
 qplot(variable, weight=value, geom="bar", position="fill", data=stm, fill=response, facets=~scenario)
 @
-      
+
+\begin{figure}
+<<time-pics-2,echo=FALSE, fig.width=8, fig.height=3,  out.width='0.95\\textwidth', dependson='time'>>=
+qplot(abs(mu),  time, colour=test_param, data=lineups) + geom_smooth(fill=NA, method="lm") + facet_grid(.~scenario, scales="free_x") + scale_colour_brewer("Design", palette="Set1") + xlab("mu") 
+@
+\caption{Scatterplot of time taken by mean shift mu - as the signal increases, time to answer decreases on average, except for outliers. Here, time is largely independent from the signal.}
+\end{figure}
+
+<<>>=
+
+model <- lm(correct/n ~ abs(mu)*scenario*test_param, data=lineups)
+
+
+#grid$mpg <- stats::predict(model, newdata=grid)
+
+#qplot(wt, mpg, data=mtcars, colour=factor(cyl)) + geom_line(data=grid) + facet_wrap(~cyl) + geom_smooth(method="lm")
+
+qplot(abs(mu), correct/n, colour=test_param, data=lineups, size=I(4)) + facet_grid(.~scenario, scales="free") + scale_colour_brewer(palette="Set1") + theme(legend.position="bottom") 
+
+@
 
 \section{Conclusions}
 
