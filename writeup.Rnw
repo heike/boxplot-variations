@@ -33,8 +33,8 @@
 <<setup, include=FALSE, cache=FALSE>>=
 #setwd("/Users/heike/papers/2013-boxplots/")
 suppressMessages(require("ggplot2"))
-suppressMessages(source("vase.r"))
-suppressMessages(source("ggviolin.R"))
+suppressMessages(source("code/vase.r"))
+suppressMessages(source("code/ggviolin.R"))
 
 library(knitr)
 opts_chunk$set(fig.path='images-writeup/', cache.path='cache-writeup/', fig.align='center',  fig.width=5, fig.height=5, cache=TRUE)
