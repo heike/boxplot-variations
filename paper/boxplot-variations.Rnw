@@ -1,0 +1,379 @@
+\documentclass[journal]{vgtc}                % final (journal style)
+%\documentclass[review,journal]{vgtc}         % review (journal style)
+%\documentclass[widereview]{vgtc}             % wide-spaced review
+%\documentclass[preprint,journal]{vgtc}       % preprint (journal style)
+%\documentclass[electronic,journal]{vgtc}     % electronic version, journal
+
+%% Uncomment one of the lines above depending on where your paper is
+%% in the conference process. ``review'' and ``widereview'' are for review
+%% submission, ``preprint'' is for pre-publication, and the final version
+%% doesn't use a specific qualifier. Further, ``electronic'' includes
+%% hyperreferences for more convenient online viewing.
+
+%% Please use one of the ``review'' options in combination with the
+%% assigned online id (see below) ONLY if your paper uses a double blind
+%% review process. Some conferences, like IEEE Vis and InfoVis, have NOT
+%% in the past.
+
+%% Please note that the use of figures other than the optional teaser is not permitted on the first page
+%% of the journal version.  Figures should begin on the second page and be
+%% in CMYK or Grey scale format, otherwise, colour shifting may occur
+%% during the printing process.  Papers submitted with figures other than the optional teaser on the
+%% first page will be refused.
+
+%% These three lines bring in essential packages: ``mathptmx'' for Type 1
+%% typefaces, ``graphicx'' for inclusion of EPS figures. and ``times''
+%% for proper handling of the times font family.
+
+\usepackage{mathptmx}
+\usepackage{graphicx}
+\usepackage{times}
+
+\usepackage[dvipsnames,svgnames]{xcolor}
+\newcommand{\hh}[1]{{\color{orange} #1}}
+\usepackage[font=small,skip=5pt]{caption}
+\usepackage{subcaption}
+
+%% We encourage the use of mathptmx for consistent usage of times font
+%% throughout the proceedings. However, if you encounter conflicts
+%% with other math-related packages, you may want to disable it.
+
+%% This turns references into clickable hyperlinks.
+\usepackage[bookmarks,backref=true,linkcolor=black]{hyperref} %,colorlinks
+\hypersetup{
+  pdfauthor = {},
+  pdftitle = {},
+  pdfsubject = {},
+  pdfkeywords = {},
+  colorlinks=true,
+  linkcolor= black,
+  citecolor= black,
+  pageanchor=true,
+  urlcolor = black,
+  plainpages = false,
+  linktocpage
+}
+
+%% If you are submitting a paper to a conference for review with a double
+%% blind reviewing process, please replace the value ``0'' below with your
+%% OnlineID. Otherwise, you may safely leave it at ``0''.
+\onlineid{0}
+
+%% declare the category of your paper, only shown in review mode
+\vgtccategory{Research}
+
+%% allow for this line if you want the electronic option to work properly
+\vgtcinsertpkg
+
+%% In preprint mode you may define your own headline.
+%\preprinttext{To appear in an IEEE VGTC sponsored conference.}
+
+%% Paper title.
+
+\title{Variations of boxplots}
+
+%% This is how authors are specified in the journal style
+
+%% indicate IEEE Member or Student Member in form indicated below
+\author{Susan VanderPlas, Eric Hare, Heike Hofmann \textit{Member, IEEE}, and Marie Vendettuoli}
+\authorfooter{
+%% insert punctuation at end of each item
+\item
+ Susan VanderPlas is with XXX. E-mail: email@com.
+\item
+ Eric Hare is with XXX. E-mail: email@com.
+\item
+ Heike Hofmann is with XXX. E-mail: email@com.
+\item
+ Marie Vendettuoli is with XXX. E-mail: email@com.
+}
+
+%other entries to be set up for journal
+\shortauthortitle{VanderPlas \MakeLowercase{\textit{et al.}}: Boxplot variations}
+%\shortauthortitle{Firstauthor \MakeLowercase{\textit{et al.}}: Paper Title}
+
+%% Abstract section.
+\abstract{Boxplots have been around for quite a while now. There are a ton of variations but are those improvements? We find out using the visual inference protocol.} % end of abstract
+
+%% Keywords that describe your work. Will show as 'Index Terms' in journal
+%% please capitalize first letter and insert punctuation after last keyword
+\keywords{Human subject testing, visual inference, comparison of designs}
+
+%% ACM Computing Classification System (CCS). 
+%% See <http://www.acm.org/class/1998/> for details.
+%% The ``\CCScat'' command takes four arguments.
+
+% HH: do we need those classifications?
+% \CCScatlist{ % not used in journal version
+%  \CCScat{K.6.1}{Management of Computing and Information Systems}%
+% {Project and People Management}{Life Cycle};
+%  \CCScat{K.7.m}{The Computing Profession}{Miscellaneous}{Ethics}
+% }
+
+%% Uncomment below to include a teaser figure.
+  \teaser{
+ \centering
+% \includegraphics[width=16cm]{CypressView}
+  \caption{In the Clouds: Vancouver from Cypress Mountain.}
+  }
+
+%% Uncomment below to disable the manuscript note
+%\renewcommand{\manuscriptnotetxt}{}
+
+%% Copyright space is enabled by default as required by guidelines.
+%% It is disabled by the 'review' option or via the following command:
+% \nocopyrightspace
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%% START OF THE PAPER %%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+<<setup, include=FALSE, cache=FALSE>>=
+#setwd("/Users/heike/papers/2013-boxplots/")
+suppressMessages(require("ggplot2"))
+suppressMessages(source("../code/vase.r"))
+suppressMessages(source("../code/ggviolin.R"))
+
+library(knitr)
+opts_chunk$set(fig.path='images-writeup/', cache.path='cache-writeup/', fig.align='center',  fig.width=5, fig.height=5, cache=TRUE)
+# initialize seeding
+foo <- runif(5)
+@
+
+
+%% The ``\maketitle'' command must be the first command after the
+%% ``\begin{document}'' command. It prepares and prints the title block.
+
+%% the only exception to this rule is the \firstsection command
+\firstsection{Introduction}
+
+\maketitle
+
+\tableofcontents
+
+%% \section{Introduction} %for journal use above \firstsection{..} instead
+
+<<data-overview, echo=FALSE, results='hide', dependson='setup'>>=
+width=2
+height=3
+alpha=0.5
+
+simstudy <- function(type=1, pars=list()) {
+#  browser()
+  if (type == 1) {
+    n <- pars$n
+    group <- rep(1:pars$group, each=n)
+    vals <- rnorm(pars$group*n, mean=rep(pars$mu, each=n))
+    frame <- data.frame(group=group, vals=vals)
+  }
+  if (type == 2) {
+    n <- pars$n
+    group <- rep(1:pars$group, each=n)
+    vals <- rnorm(pars$group*n, 0)
+    vals[length(vals)+1-(1:pars$n1)] <- vals[length(vals)+1-(1:pars$n1)]+pars$mu
+    frame <- data.frame(group=group, vals=vals)
+  }
+  if (type == 3) {
+    n <- pars$n
+    group <- rep(1:pars$group, each=n)
+    vals <- c(rnorm(pars$n1, pars$mu),rnorm(n-pars$n1, 0))
+    vals <- scale(vals)
+    vals <- c(rnorm(n, 0), vals)
+    frame <- data.frame(group=group, vals=vals)
+  }
+  return(frame)
+}
+
+set.seed(16041972)
+type1 <- simstudy(type=1, pars=list(group=2, mu=c(0,1.2), n=96))
+type2 <- simstudy(type=2, pars=list(group=2, mu=2.5, n=96, n1=6))
+type3 <- simstudy(type=3, pars=list(group=2, mu=3.5, n=96, n1=36))
+
+@
+
+\begin{figure*}
+\centering
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{boxplots} 
+<<overview-figa, echo=FALSE, fig.width=2, fig.height=2, out.height='\\textwidth'>>=
+ggplot(data = type1, aes(x = factor(group), 
+        y = vals, colour=factor(group), fill=factor(group))) + 
+				geom_boxplot(alpha=alpha) + xlab("") + ylab("") + 
+  theme(legend.position="none", plot.margin=unit(c(0,0,0,0), unit="line"))
+@
+\end{subfigure}
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{jittered dotplots}
+<<overview-figb, echo=FALSE, fig.width=2, fig.height=2,  out.height='\\textwidth'>>=
+ggplot(data = type2, aes(x = factor(group), 
+        y = vals, colour=factor(group), fill=factor(group))) + 
+  	geom_boxplot(outlier.colour  = 'NA', fill="grey80", colour="grey60") + 
+		geom_jitter(aes(colour=factor(group)), position=position_jitter(width=0.15), shape=1) + 
+		xlab("") + ylab("") + 
+  theme(legend.position="none", 
+        plot.margin=unit(c(0,0,0,0), unit="line"))
+@
+\end{subfigure}
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{beeswarms \cite{eklund11}}
+%<<overview-figc, echo=FALSE, fig.width=2, fig.height=2,  out.height='\\textwidth'>>=
+%set.seed(3*16041972)
+%frame <- simstudy(type=1, pars=list(group=2, mu=c(0,1.0), n=96))
+%require(beeswarm)
+%# adjust graphics device size until it looks ok
+%bs <- beeswarm(formula = vals~group, data = frame, add = F, do.plot = T, method = "swarm", cex=2.5)
+%bs$group <- frame$group
+%
+%p4 <- ggplot(data=bs, aes(x = group, y = y.orig, group=group)) + 
+%        geom_boxplot(outlier.colour = 'NA', fill="grey80",  colour="grey60", width=0.75) +
+%        geom_point(aes(x = x, y = y, colour=factor(group)), shape=1, size=1) +
+%        scale_x_continuous(breaks=c(1,2)) + 
+%        theme(legend.position="none",
+%               plot.margin=unit(c(0,0,0,0), unit="line")) + xlab("") + ylab("") 
+%    			
+%ggsave(width=2, height=2, filename = "beeswarm-xpl.pdf", plot = p4)
+%@
+\includegraphics[height=\textwidth]{images/beeswarm-xpl}
+\end{subfigure}
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{vase plots~\cite{benjamini88}, bandwidth = 0.5}
+<<overview-figd, echo=FALSE, fig.width=2, fig.height=2,  out.height='\\textwidth', message=FALSE>>=
+  ggvase(y="vals", group="group", data=type1, bandwidth=0.5) +
+    theme(legend.position="none", plot.margin=unit(c(0,0,0,0), unit="line"))
+@
+\end{subfigure}
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{vase plots, bandwidth = 0.25}
+<<overview-fige, echo=FALSE, fig.width=2, fig.height=2,  out.height='\\textwidth'>>=
+ggvase(y="vals", group="group", data=type2, bandwidth=0.25) +
+  theme(plot.margin=unit(c(0,0,0,0), unit="line"))
+# library(ggboxplots)
+# type2$group <- factor(type2$group)
+# qplot(group, vals, data=type2, geom="vase", fill=group)
+@
+\end{subfigure}
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{vase plots,  bandwidth = 0.15}
+<<overview-figf, echo=FALSE, fig.width=2, fig.height=2,  out.height='\\textwidth'>>=
+ggvase(y="vals", group="group", data=type3, bandwidth=0.15) +
+  theme(plot.margin=unit(c(0,0,0,0), unit="line"))
+@
+\end{subfigure}
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{hdr boxplots  \cite{hyndman96}}
+%<<overview-figf, echo=FALSE, fig.width=2, fig.height=2,  out.height='\\textwidth'>>=
+%source("code/gghdr.R")
+%frame <- simstudy(type=3, pars=list(n=96, mu=4, n1=48, group=2))
+%gghdr(y="vals", group="group", data=frame)
+%gghdr(y="vals", group="group", data=frame) + 
+%  theme(plot.margin=unit(c(0,0,0,0), unit="line"))
+%@
+
+\includegraphics[width=\textwidth]{images/hdr-xpl.pdf}
+\end{subfigure}
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{violin plots \cite{hintze98},  bandwidth = 0.25}
+<<overview-figh, echo=FALSE, fig.width=2, fig.height=2,  out.height='\\textwidth', message=FALSE>>=
+ggviolin(y="vals", group="group", data=type2, bandwidth=0.25) + 
+  theme(plot.margin=unit(c(0,0,0,0), unit="line"))
+@
+\end{subfigure}
+\begin{subfigure}[t]{0.275\textwidth}
+  \caption{violin plots, bandwidth = 0.5}
+<<overview-figi, echo=FALSE, fig.width=2, fig.height=2,  out.height='\\textwidth'>>=
+ggviolin(y="vals", group="group", data=type3, bandwidth=0.5) + 
+  theme(plot.margin=unit(c(0,0,0,0), unit="line"))
+@
+\end{subfigure}
+\caption{Overview of boxplot variations showing example data sets from scenarios (i) to (iii) from left to right. \label{fig:overview}}
+\end{figure*}
+
+All of our plots are generated with code based on the ggplot2 package \cite{wickham09} in the software R \cite{r}. The lineups are created using the nullabor package \cite{nullabor}.
+
+
+\section{Experimental Setup}
+We use a simulation study to investigate three different scenarios, which have in common that we are simulating data for two equal-sized groups.
+(i) a {\it mean shift} between two groups, (ii) two groups of normally distributed values, with a set of {\it outliers} spiked into one group, and (iii) {\it bimodality} in one of the groups.
+The objective in each of these scenarios is to assess whether we can visually determine the difference between the two groups.
+
+Each of the scenarios requires the simulation of two groups of size $n=96$. In all of them, we get group 1 by drawing a sample from $N(\mu_1, \sigma)$.
+
+Getting values for group 2 depends on each scenario:
+\begin{enumerate}
+\item[(i)] 96 draws from $N(\mu_2,\sigma)$
+\item[(ii)] 90 draws from $N(\mu_1,\sigma)$, and  6 draws from  $N(\mu_3,\sigma)$
+\item[(iii)] $x_1, ..., x_{n_1} \sim N(\mu_4, \sigma)$ and $x_{n_1+1}, ..., x_{96} \sim N(\mu_1,\sigma)$. These values $X$ for group 2 are then normalized to a mean of 0 and a standard devation of $\sigma$, to remove any mean and variance differences between group 1 and group 2. 
+\end{enumerate}
+
+ The first group comes from a Normal $N(0.82, 0.03^2)$ distribution (motivated, by what a control under the ELISA design is supposed to look like).
+ For the mean-shift scenario, the second group is simulated from a Normal $N(0.82 + \delta_1, 0.03^2)$ distribution, with $\delta_1 \in 0.03 \cdot (0.5, 0.6, 0.7 , ..., 1.3)$. This difference in means corresponds to a $p$-value of a $t$-test from $8 \cdot 10^{-4}$ to $2 \cdot 10^{-14}$, which is reflected in the difficulty level of spotting the correct plot from the lineup (cf. figure \ref{fig:power-result} (left)).
+
+For the second scenario, we spiked into the second group six outliers from a Normal $N(0.82 + \delta_2, 0.03^2)$ distribution with $\delta_2 \in  0.03 \cdot (3.25, 3.5, 3.75, ..., 5.25)$, assuming that as the difficulty for identifying the data plot from the lineup would decrease with an increase in $\delta_2$. This did not hold up in practice, as can be seen in 
+
+In the third scenario, the second group consists of a mixtures of two normal distributions with a shift in mean of $\delta_3$ between them. The difficulty levels depends both on the absolute size of $\delta_3$ and the relative size of the two groups: we are investigating three different scenarios, here: $n_1 = 24, 36,$ and $48$, giving relative ratios of $1:3, 3:5,$ and $1:1$ between the groups. With an increase in $\delta_3$ and a ratio closer to $1:1$, the difficulty level  of identifying the correct plot from the lineup is assumed to decrease.  In order to avoid any other influences besides the bi-modality in the second group, we scale this group to have a mean of 0.82 and variance of $0.03^2$.
+
+
+
+\paragraph{How did we reach participants?}
+In the study (see \url{http://www.public.iastate.edu/~mahbub/feedback_turk6/homepage.html}),
+participants were shown ten lineups: one reference chart randomly placed in the set of ten, and nine other  lineups: one from each of the designs, three from each of the three scenarios at three difficulty levels.
+
+
+\hh{
+model structure
+
+hierarchical linear model
+
+Bradley Terry model? same lineup, same data (except for order?), different people to evaluate - remove people effect?
+}
+
+
+\section{Exposition}
+
+Equations are cool.
+
+\begin{equation}
+\sum_{j=1}^{z} j = \frac{z(z+1)}{2}
+\end{equation}
+
+Notice the caption at the top of Table~\ref{vis_accept}.
+
+\begin{table}
+%% Table captions on top in journal version
+ \caption{SciVis Paper Acceptance Rate: 1994-2006}
+ \label{vis_accept}
+ \scriptsize
+ \begin{center}
+   \begin{tabular}{cccc}
+     Year & Submitted & Accepted & Accepted (\%)\\
+   \hline
+     2004 & 167 & 46 & 27.6\\
+     2005 & 268 & 88 & 32.8\\
+     2006 & 228 & 63 & 27.6
+   \end{tabular}
+ \end{center}
+\end{table}
+
+
+\subsection{Mezcal Head}
+
+Footnotes are ok%
+\footnote{Footnotes appear at the bottom of the column}.
+
+
+
+\section{Conclusion}
+
+
+%% if specified like this the section will be committed in review mode
+\acknowledgments{
+The authors wish to thank A, B, C. This work was supported in part by
+a grant from XYZ.}
+
+\bibliographystyle{abbrv}
+%%use following if all content of bibtex file should be shown
+%\nocite{*}
+\bibliography{references}
+\end{document}
